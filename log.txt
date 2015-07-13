@@ -1,0 +1,59 @@
+2015-07-13 13:22:35,510 - __main__ - INFO - Hello baby
+2015-07-13 13:24:14,423 - __main__ - [ logging - Hello baby
+2015-07-13 13:24:29,063 - __main__ - [ logging] - Hello baby
+2015-07-13 13:26:19,240 - __main__ - [ logging] - Hello baby
+2015-07-13 13:26:19,240 - __main__ - ERROR - Failed to open file
+Traceback (most recent call last):
+  File "./logging_test.py", line 33, in <module>
+    open('/path/to/does/not/exist', 'rb')
+IOError: [Errno 2] No such file or directory: '/path/to/does/not/exist'
+2015-07-13 13:26:54,056 - __main__ - [ logging] - Hello baby
+2015-07-13 13:26:54,057 - __main__ - ERROR - Failed to open file
+Traceback (most recent call last):
+  File "./logging_test.py", line 33, in <module>
+    open('/path/to/does/not/exist', 'rb')
+IOError: [Errno 2] No such file or directory: '/path/to/does/not/exist'
+2015-07-13 13:42:17,217 - __main__ - [ logging] - Hello baby
+2015-07-13 13:42:17,217 - __main__ - ERROR - Failed to open file
+Traceback (most recent call last):
+  File "./logging_test.py", line 33, in <module>
+    open('/path/to/does/not/exist', 'rb')
+IOError: [Errno 2] No such file or directory: '/path/to/does/not/exist'
+2015-07-13 13:43:15,826 - __main__ - [ logging] - Hello baby
+2015-07-13 13:43:15,826 - __main__ - ERROR - Failed to open file
+Traceback (most recent call last):
+  File "./logging_test.py", line 32, in <module>
+    open('/path/to/does/not/exist', 'rb')
+IOError: [Errno 2] No such file or directory: '/path/to/does/not/exist'
+2015-07-13 13:43:15,837 - __main__ - [ logging] - It works!
+2015-07-13 14:03:54,861 - __main__ - [ logging] - Hello baby
+2015-07-13 14:03:54,861 - __main__ - ERROR - Failed to open file
+Traceback (most recent call last):
+  File "./logging_test.py", line 32, in <module>
+    open('/path/to/does/not/exist', 'rb')
+IOError: [Errno 2] No such file or directory: '/path/to/does/not/exist'
+2015-07-13 14:03:54,868 - __main__ - [ logging] - It works!
+2015-07-13 14:04:23,357 - __main__ - [ logging] - Hello baby
+2015-07-13 14:04:23,357 - __main__ - ERROR - Failed to open file
+Traceback (most recent call last):
+  File "./logging_test.py", line 33, in <module>
+    open('/path/to/does/not/exist', 'rb')
+IOError: [Errno 2] No such file or directory: '/path/to/does/not/exist'
+2015-07-13 14:04:23,367 - __main__ - [ logging] - It works!
+2015-07-13 14:04:40,700 - __main__ - [ logging] - Hello baby
+2015-07-13 14:04:40,700 - __main__ - ERROR - Failed to open file
+Traceback (most recent call last):
+  File "./logging_test.py", line 33, in <module>
+    open('/path/to/does/not/exist', 'rb')
+IOError: [Errno 2] No such file or directory: '/path/to/does/not/exist'
+2015-07-13 14:04:40,710 - __main__ - [ logging] - It works!
+2015-07-13 14:04:40,714 - __main__ - [ logging] - logger json config!
+2015-07-13 14:12:03,137 - __main__ - [ logging] - Hello baby
+2015-07-13 14:12:03,138 - __main__ - ERROR - Failed to open file
+Traceback (most recent call last):
+  File "./logging_test.py", line 33, in <module>
+    open('/path/to/does/not/exist', 'rb')
+IOError: [Errno 2] No such file or directory: '/path/to/does/not/exist'
+2015-07-13 14:12:03,148 - __main__ - [ logging] - It works!
+2015-07-13 14:12:03,153 - __main__ - [ logging] - logger json config!
+2015-07-13 14:12:03,182 - __main__ - [ logging] - logger yaml config!
