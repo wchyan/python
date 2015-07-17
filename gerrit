@@ -1,0 +1,8 @@
+_gerrit ()
+{
+	local opts=`cat ~/.gerrit`
+	COMPREPLY=()
+	cur="${COMP_WORDS[COMP_CWORD]}"
+	COMPREPLY=($(compgen -W "${opts}" "${cur}"))
+}
+complete -F _gerrit gerrit.py

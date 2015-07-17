@@ -1,8 +1,14 @@
 #!/usr/bin/python
 
+from __future__ import unicode_literals
 import subprocess
 from optparse import OptionParser
 import sys
+import json
+import time
+import os
+import os.path
+import datetime
 
 # 1. Init version
 #    Tony Teng
@@ -17,6 +23,12 @@ class ChangeIDError(Exception):
     pass
 
 class SignError(Exception):
+    pass
+
+class GitError(Exception):
+    pass
+
+class SSHError(Exception):
     pass
 
 class Gerrit():
@@ -38,9 +50,54 @@ class Gerrit():
         self.email = 'marvell.com'
 
     def _cmd(self, cmd):
+        msg = []
         p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        while p.poll()==None:
+            line = p.stdout.readline()
+            msg.append(line)
         p.wait()
-        return (p.returncode, p.stdout.readlines())
+        return (p.returncode, msg)
+
+    def _check_git(self):
+        cmd = 'git status'
+        ret, lines = self._cmd(cmd)
+        if ret != 0:
+            raise GitError
+
+    def _update_gerrit_branches(self):
+        delta = datetime.timedelta(days=31)
+        gerrit_branch_file = os.path.expanduser('~/.gerrit')
+        if os.path.exists(gerrit_branch_file):
+            mtime = os.path.getmtime(gerrit_branch_file)
+            d1 = datetime.datetime.fromtimestamp(mtime)  
+            d2 = datetime.datetime.now()
+            delta = d2 - d1
+        if delta.days <= 30:
+            return
+
+        if not os.path.exists(gerrit_branch_file) or delta.days > 30:
+            query_cmd = 'gerrit query --format=JSON  age:month status:merged'
+            cmd = 'ssh {}@{} -p {} {}'.format(self.user, self.server, self.gerrit_port, query_cmd)
+            ret, msg = self._cmd(cmd)
+            if ret != 0:
+                raise SSHError
+
+            branch = []
+            for p in msg:
+                bjson = json.loads(p)
+                pr = bjson.get('project', None)
+                if pr != None and (pr.startswith('git/android/vendor/marvell/ose') or
+                    pr.startswith('git/android/vendor/marvell/ptk') or
+                    pr.startswith('git/qae') or
+                    pr.startswith('git/android/tools')):
+                    continue
+                br = bjson.get('branch', None)
+                if br != None:
+                    branch.append(br)
+            branch = list(set(branch))
+            with open(gerrit_branch_file, 'w+') as file:
+                for br in branch:
+                    file.write(br + '\n')
 
     def _parse_option(self, argv):
         usage = "\n  %prog [options] branch" 
@@ -79,7 +136,7 @@ class Gerrit():
             parser.exit()
         self.branch = args[0]
 
-    def _get_project(self):
+    def _get_project_info(self):
         cmd = 'git remote -v'
         ret, lines = self._cmd(cmd)
         for line in lines:
@@ -88,17 +145,25 @@ class Gerrit():
                 remote = line.split()
                 self.remote = remote[0].strip()
                 self.project = remote[1].strip()
-                self.protocol, addr = remote[1].split('//')
+                protocol, addr = remote[1].split('//')
+                self.protocol = protocol.strip(':')
+                if addr.find('@') >= 0:
+                    user, addr = addr.split('@')
+                    self.user = user
                 pos =  addr.index('/')
-                self.server = addr[0:pos]
                 self.project = addr[pos:]
+                server = addr[0:pos]
+                if server.find(':') >= 0:
+                    server, port = server.split(':')
+                    self.gerrit_port = port
+                self.server = server
                 break
 
     def _get_git_user(self):
         if self.user == '':
             cmd = 'git config --get user.email'
             ret, lines = self._cmd(cmd)
-            if len(lines) == 1:
+            if ret == 0:
                 self.user = lines[0].split('@')[0]
 
     def _get_commit_ids(self):
@@ -122,7 +187,7 @@ class Gerrit():
                 raise SignError
 
     def _get_push_cmd(self):
-        cmd = 'git push {}//{}@{}:{}{} HEAD:refs/for/{}'.format(self.protocol,
+        cmd = 'git push {}://{}@{}:{}{} HEAD:refs/for/{}'.format(self.protocol,
                 self.user, self.server, self.gerrit_port, self.project, self.branch)
         return cmd
 
@@ -158,8 +223,10 @@ class Gerrit():
 
     def push(self):
         self._parse_option(self.argv)
-        self._get_project()
+        self._check_git()
+        self._get_project_info()
         self._get_git_user()
+        self._update_gerrit_branches()
         self._get_commit_ids()
         gerrit._check_sign()
         gerrit._check_changeid()
@@ -187,3 +254,7 @@ if __name__ == '__main__':
         print '''No Change-ID, get commit-msg hook by \n   "scp -p -P 29418 shgit.marvell.com:hooks/commit-msg .git/hooks/"\nand commit again.'''
     except SignError as e:
         print '''No sign, please add '-a' when do commit.'''
+    except GitError as e:
+        print '''Not a git'''
+    except SSHError as e:
+        print '''Can't access ssh server %s://%s ''' %  (gerrit.protocol, gerrit.server)
