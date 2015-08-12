@@ -5,12 +5,16 @@ from __future__ import unicode_literals
 from __future__ import print_function
 import subprocess
 from optparse import OptionParser
-import sys
 import json
 import os
 import time
 import datetime
 import tempfile
+
+import sys
+if sys.version_info[0] == 2:
+    reload(sys)
+    sys.setdefaultencoding('utf-8')
 
 # 1. Init version
 #    Tony Teng
@@ -105,7 +109,10 @@ class Gerrit():
         msg = []
         out_temp = None
         try:
-            out_temp = tempfile.SpooledTemporaryFile(bufsize=2*1024*1024)
+            if sys.version_info[0] == 3:
+                out_temp = tempfile.SpooledTemporaryFile(mode='w+', buffering=2*1024*1024, encoding='utf-8')
+            else:
+                out_temp = tempfile.SpooledTemporaryFile(bufsize=2*1024*1024)
             out_fd = out_temp.fileno()
             p = subprocess.Popen(cmd, shell=True, stdout=out_fd, stderr=out_fd)
             p.wait()
@@ -293,7 +300,10 @@ class Gerrit():
         self._check_changeid()
         cmd = self._get_push_cmd()
         print(cmd)
-        confirm = raw_input('Push these commits? [y/n]: ')
+        if sys.version_info[0] == 3:
+            confirm = input('Push these commits? [y/n]: ')
+        else:
+            confirm = raw_input('Push these commits? [y/n]: ')
         if confirm.lower() == 'y' or confirm.lower() == 'yes':
             ret, msg = self._cmd(cmd)
             print(''.join(msg))
