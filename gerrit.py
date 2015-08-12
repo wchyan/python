@@ -10,6 +10,7 @@ import json
 import os
 import time
 import datetime
+import tempfile
 
 # 1. Init version
 #    Tony Teng
@@ -100,21 +101,23 @@ class Gerrit():
             self.branch = args[0]
 
     def _cmd(self, cmd):
+        ret = 1
         msg = []
-        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT, bufsize=-1)
-        '''
-        while p.poll() == None:
-            line = p.stdout.readline()
-            msg.append(line)
-        '''
-        while 1:
-            line = p.stdout.readline()
-            if subprocess.Popen.poll(p) == 0 and not line:
-                break
-            msg.append(line)
-        p.wait()
-        return (p.returncode, msg)
+        out_temp = None
+        try:
+            out_temp = tempfile.SpooledTemporaryFile(bufsize=2*1024*1024)
+            out_fd = out_temp.fileno()
+            p = subprocess.Popen(cmd, shell=True, stdout=out_fd, stderr=out_fd)
+            p.wait()
+            out_temp.seek(0)
+            msg = out_temp.readlines()
+            ret = p.returncode
+        except Exception as e:
+            print(e)
+        finally:
+            if out_temp:
+                out_temp.close()
+        return ret, msg
 
     def _check_git(self):
         cmd = 'git status'
@@ -136,19 +139,21 @@ class Gerrit():
             self.update_candidate_branch = True
 
         if self.update_candidate_branch:
-            query_cmd = 'ssh {}@{} -p {} gerrit query --format=JSON  age:month status:merged'
-            cmd = query_cmd.format(self.user, self.server, self.gerrit_port)
+            d = datetime.datetime.now() - datetime.timedelta(days=30)
+            query_cmd = 'ssh {}@{} -p {} gerrit query --format=JSON  after:{} status:merged'
+            cmd = query_cmd.format(self.user, self.server, self.gerrit_port, str(d.date()))
             ret, msg = self._cmd(cmd)
             if ret != 0:
                 raise SSHError
+            branch = []
             try:
-                branch = []
                 for p in msg:
                     bjson = json.loads(p)
                     pr = bjson.get('project', None)
                     if pr != None and (pr.startswith('git/android/vendor/marvell/ose') or
                         pr.startswith('git/android/vendor/marvell/ptk') or
                         pr.startswith('git/qae') or
+                        pr.startswith('git/android/shared') or
                         pr.startswith('git/android/tools')):
                         continue
                     br = bjson.get('branch', None)
@@ -184,6 +189,11 @@ class Gerrit():
                     self.gerrit_port = port
                 self.server = server
                 break
+        if (self.remote == '' or
+                self.protocol == '' or
+                self.server == '' or
+                self.project == ''):
+            raise  GitError
 
     def _get_git_user(self):
         if self.user == '':
